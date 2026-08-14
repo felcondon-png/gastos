@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16233A">
+<title>Rendición de Gastos · FCM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- ==================================================================
+     CONFIGURACIÓN — PEGUE AQUÍ LOS DATOS DE SU PROYECTO FIREBASE NUEVO
+     Firebase Console → Configuración del proyecto → Tus apps → Web
+     ================================================================== -->
+<script>
+window.FCM_FIREBASE = {
+  apiKey:            "AIzaSyDbf7YFLwhP1omeACLFlWuLBDnjm9-pSPw",
+  authDomain:        "gastos-fcm.firebaseapp.com",
+  projectId:         "gastos-fcm",
+  storageBucket:     "gastos-fcm.firebasestorage.app",
+  messagingSenderId: "809134033603",
+  appId:             "1:809134033603:web:dd47c5e1de3f71d1323076"
+};
+</script>
+
+<style>
+:root{
+  --ink:#16233A;          /* azul tinta, mismo family que la planilla */
+  --ink-2:#2E4470;
+  --paper:#FBFAF7;        /* papel cálido */
+  --paper-2:#F2EFE8;
+  --rule:#DFDBD2;
+  --muted:#6E7686;
+  --accent:#0E7C6B;       /* teal: acciones y dinero confirmado */
+  --accent-soft:#E3F1EE;
+  --signal:#C2571A;       /* naranjo: pendiente */
+  --signal-soft:#FBEBDF;
+  --danger:#A32B21;
+  --r:10px;
+  --shadow:0 1px 2px rgba(22,35,58,.06), 0 8px 24px rgba(22,35,58,.07);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper-2);
+  color:var(--ink);
+  font-family:'Archivo',system-ui,-apple-system,sans-serif;
+  font-size:15px;line-height:1.45;
+  padding-bottom:calc(74px + env(safe-area-inset-bottom));
+  -webkit-font-smoothing:antialiased;
+}
+.num{font-family:'IBM Plex Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+button,input,select,textarea{font-family:inherit;font-size:16px;color:inherit}
+button{cursor:pointer;border:none;background:none}
+
+/* ---------- barra superior ---------- */
+header{
+  position:sticky;top:0;z-index:40;background:var(--ink);color:#fff;
+  padding:calc(10px + env(safe-area-inset-top)) 14px 10px;
+  display:flex;align-items:center;gap:10px;
+}
+header .mark{
+  font-weight:700;font-size:15px;letter-spacing:-.01em;line-height:1.1;flex:1;
+}
+header .mark span{display:block;font-size:10.5px;font-weight:500;letter-spacing:.14em;
+  text-transform:uppercase;color:#8FA3C4;font-family:'IBM Plex Mono',monospace}
+header select{
+  background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.22);
+  border-radius:8px;padding:7px 9px;font-size:13px;font-weight:600;appearance:none;
+}
+header select option{color:#16233A}
+
+/* ---------- contenedores ---------- */
+main{padding:14px;max-width:660px;margin:0 auto}
+.view{display:none;animation:in .18s ease}
+.view.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:var(--r);
+  box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+.card.tight{padding:12px}
+.perf{border-top:2px dashed var(--rule);margin:14px -16px;height:0}
+
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+h2{font-size:19px;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+
+/* ---------- captura ---------- */
+.shot{
+  border:2px dashed var(--rule);border-radius:var(--r);background:#fff;
+  min-height:190px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:10px;padding:24px;text-align:center;position:relative;overflow:hidden;
+}
+.shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#111}
+.shot .ico{font-size:34px;line-height:1}
+.shot p{margin:0;color:var(--muted);font-size:13.5px;max-width:230px}
+.scanning::after{
+  content:'';position:absolute;left:0;right:0;height:3px;background:var(--accent);
+  box-shadow:0 0 18px 4px rgba(14,124,107,.6);animation:scan 1.15s ease-in-out infinite;
+}
+@keyframes scan{0%{top:0}50%{top:calc(100% - 3px)}100%{top:0}}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  padding:14px;border-radius:var(--r);font-weight:600;font-size:15px;letter-spacing:-.01em}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.primary:disabled{background:#A9C4BE;color:#F2F7F6}
+.btn.dark{background:var(--ink);color:#fff}
+.btn.ghost{background:transparent;border:1px solid var(--rule);color:var(--ink)}
+.btn.sm{padding:10px;font-size:13.5px}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+
+/* ---------- formulario ---------- */
+label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 5px}
+.f{margin-bottom:12px}
+input,select,textarea{
+  width:100%;padding:11px 12px;border:1px solid var(--rule);border-radius:8px;
+  background:#fff;color:var(--ink);
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--ink-2);outline-offset:1px;border-color:transparent}
+textarea{resize:vertical;min-height:60px;font-size:15px}
+input[type=number]{font-family:'IBM Plex Mono',monospace;font-weight:600}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hint{font-size:12px;color:var(--muted);margin:4px 0 0}
+
+.flag{border-radius:8px;padding:11px 13px;font-size:13.5px;margin-bottom:12px;
+  border-left:3px solid;display:flex;gap:9px;align-items:flex-start}
+.flag.warn{background:var(--signal-soft);border-color:var(--signal);color:#7A3610}
+.flag.ok{background:var(--accent-soft);border-color:var(--accent);color:#0A5A4E}
+.flag.bad{background:#FBE9E7;border-color:var(--danger);color:#7E211A}
+.flag b{display:block;margin-bottom:2px}
+
+/* ---------- lista ---------- */
+.item{background:var(--paper);border:1px solid var(--rule);border-radius:var(--r);
+  padding:12px 14px;margin-bottom:9px;display:flex;gap:12px;align-items:flex-start;
+  box-shadow:0 1px 2px rgba(22,35,58,.05)}
+.item .thumb{width:44px;height:44px;border-radius:7px;object-fit:cover;flex:none;
+  background:var(--paper-2);border:1px solid var(--rule)}
+.item .body{flex:1;min-width:0}
+.item .t{font-weight:600;font-size:14.5px;letter-spacing:-.01em;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.item .m{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .amt{text-align:right;flex:none}
+.item .amt .v{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14.5px;
+  font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;padding:2.5px 6px;border-radius:5px;margin-top:4px}
+.pill.pen{background:var(--signal-soft);color:var(--signal)}
+.pill.pre{background:#E8EEF8;color:var(--ink-2)}
+.pill.apr{background:#EDE7F6;color:#5B3EA8}
+.pill.ree{background:var(--accent-soft);color:var(--accent)}
+
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty .ico{font-size:32px;margin-bottom:8px}
+.empty p{margin:0 0 4px;font-size:14px}
+
+/* ---------- resumen ---------- */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+.kpi{background:var(--paper);border:1px solid var(--rule);border-radius:var(--r);padding:12px 13px}
+.kpi .k{font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.kpi .v{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;letter-spacing:-.03em}
+.kpi.hi{background:var(--ink);border-color:var(--ink)}
+.kpi.hi .k{color:#8FA3C4}.kpi.hi .v{color:#fff}
+
+.bar{margin-bottom:9px}
+.bar .lab{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;gap:10px}
+.bar .lab span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .lab .num{font-weight:600;flex:none}
+.bar .track{height:7px;background:var(--paper-2);border-radius:4px;overflow:hidden}
+.bar .fill{height:100%;background:var(--ink-2);border-radius:4px}
+
+/* ---------- pestañas ---------- */
+nav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--paper);
+  border-top:1px solid var(--rule);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:9px 4px 10px;display:flex;flex-direction:column;align-items:center;
+  gap:3px;color:var(--muted);font-size:10.5px;font-weight:600;letter-spacing:.02em}
+nav button .ico{font-size:19px;line-height:1}
+nav button.on{color:var(--ink)}
+nav button.on .ico{transform:translateY(-1px)}
+
+/* ---------- hoja modal ---------- */
+.sheet{position:fixed;inset:0;z-index:60;background:rgba(22,35,58,.45);
+  display:none;align-items:flex-end;justify-content:center}
+.sheet.on{display:flex}
+.sheet .inner{background:var(--paper);width:100%;max-width:660px;max-height:92vh;overflow:auto;
+  border-radius:16px 16px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom))}
+.sheet .grab{width:34px;height:4px;background:var(--rule);border-radius:2px;margin:0 auto 14px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom));
+  background:var(--ink);color:#fff;padding:11px 16px;border-radius:8px;font-size:13.5px;font-weight:500;
+  z-index:70;opacity:0;pointer-events:none;transition:opacity .2s;max-width:88%;text-align:center}
+.toast.on{opacity:1}
+
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--paper-2);
+  padding:2px 5px;border-radius:4px;word-break:break-all}
+pre{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:var(--ink);color:#D7E0EE;
+  padding:12px;border-radius:8px;overflow:auto;line-height:1.5}
+.setup{max-width:520px;margin:40px auto;padding:0 16px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mark">Rendición de Gastos<span id="hdEmpresa">FCM</span></div>
+  <select id="selMes" aria-label="Mes"></select>
+  <select id="selAnio" aria-label="Año"></select>
+</header>
+
+<main>
+
+<!-- ================= CAPTURAR ================= -->
+<section class="view on" id="v-cap">
+  <div class="card">
+    <p class="eyebrow">Paso 1 · Recibo</p>
+    <div class="shot" id="shot">
+      <div class="ico">🧾</div>
+      <p id="shotTxt">Saque la foto de la boleta o factura. Se lee sola y completa los campos.</p>
+      <img id="shotImg" alt="" hidden>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn dark" id="btnCam">📷 Sacar foto</button>
+      <button class="btn ghost" id="btnGal">Galería</button>
+    </div>
+    <input type="file" id="fileCam" accept="image/*" capture="environment" hidden>
+    <input type="file" id="fileGal" accept="image/*" hidden>
+    <button class="btn primary" id="btnLeer" style="margin-top:9px" disabled>Leer recibo</button>
+    <p class="hint" id="capHint">También puede saltarse la foto y llenar los campos a mano.</p>
+  </div>
+
+  <div class="card" id="cardForm">
+    <p class="eyebrow">Paso 2 · Datos del gasto</p>
+    <div id="flags"></div>
+
+    <div class="grid2">
+      <div class="f"><label for="fFecha">Fecha</label><input type="date" id="fFecha"></div>
+      <div class="f"><label for="fMonto">Monto total $</label><input type="number" id="fMonto" inputmode="numeric" placeholder="0"></div>
+    </div>
+    <div class="f"><label for="fCat">Categoría</label><select id="fCat"></select></div>
+    <div class="f"><label for="fProv">Proveedor / comercio</label><input id="fProv" placeholder="Nombre del local"></div>
+    <div class="f"><label for="fDesc">Descripción</label><textarea id="fDesc" placeholder="Qué fue y para qué"></textarea></div>
+    <div class="f"><label for="fProy">Proyecto / centro de costo</label><select id="fProy"></select></div>
+    <div class="grid2">
+      <div class="f"><label for="fDoc">Tipo documento</label><select id="fDoc"></select></div>
+      <div class="f"><label for="fNro">N° documento</label><input id="fNro" inputmode="numeric" placeholder="—"></div>
+    </div>
+    <div class="grid2">
+      <div class="f"><label for="fMedio">Medio de pago</label><select id="fMedio"></select></div>
+      <div class="f"><label for="fEstado">Estado</label><select id="fEstado"></select></div>
+    </div>
+    <div class="f"><label for="fObs">Observaciones</label><input id="fObs" placeholder="Opcional"></div>
+
+    <div class="perf"></div>
+    <div class="row">
+      <button class="btn ghost sm" id="btnLimpiar">Limpiar</button>
+      <button class="btn primary" id="btnGuardar">Guardar gasto</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GASTOS ================= -->
+<section class="view" id="v-lst">
+  <div class="card tight">
+    <div class="grid2">
+      <div><label for="fltEstado">Estado</label><select id="fltEstado"></select></div>
+      <div><label for="fltProy">Proyecto</label><select id="fltProy"></select></div>
+    </div>
+  </div>
+  <div id="lista"></div>
+</section>
+
+<!-- ================= RESUMEN ================= -->
+<section class="view" id="v-res">
+  <div class="kpis" id="kpis"></div>
+  <div class="card">
+    <p class="eyebrow">Por categoría</p>
+    <div id="porCat"></div>
+  </div>
+  <div class="card">
+    <p class="eyebrow">Por proyecto</p>
+    <div id="porProy"></div>
+  </div>
+  <div class="card">
+    <p class="eyebrow">Pasar a la planilla</p>
+    <p class="sub">Copie y pegue en la hoja del mes de su archivo Excel. Las columnas quedan en el mismo orden.</p>
+    <button class="btn dark sm" id="btnCopiaB" style="margin-bottom:8px">Copiar columnas B a J → pegar en B8</button>
+    <button class="btn ghost sm" id="btnCopiaM" style="margin-bottom:8px">Copiar estados → pegar en M8</button>
+    <button class="btn ghost sm" id="btnCsv">Descargar CSV del mes</button>
+  </div>
+</section>
+
+<!-- ================= AJUSTES ================= -->
+<section class="view" id="v-cfg">
+  <div class="card">
+    <p class="eyebrow">Conexión</p>
+    <div class="f"><label for="cKey">Clave de la API de Anthropic</label>
+      <input id="cKey" type="password" placeholder="sk-ant-...">
+      <p class="hint">Se guarda en su Firestore, no en el código. Así no queda en GitHub.</p>
+    </div>
+    <div class="f"><label for="cModelo">Modelo</label><input id="cModelo" placeholder="claude-sonnet-5">
+      <p class="hint">Si la lectura falla con error de modelo, pruebe <code>claude-haiku-4-5-20251001</code> (más barato y rápido).</p>
+    </div>
+    <div class="grid2">
+      <div class="f"><label for="cEmpresa">Empresa</label><input id="cEmpresa" placeholder="Empresas FCM SpA"></div>
+      <div class="f"><label for="cIva">Tasa IVA</label><input id="cIva" type="number" step="1" placeholder="19"></div>
+    </div>
+    <button class="btn primary sm" id="btnCfgSave">Guardar ajustes</button>
+  </div>
+
+  <div class="card">
+    <p class="eyebrow">Listas</p>
+    <p class="sub">Una por línea. Deben decir exactamente lo mismo que en la hoja «Parametros» de la planilla.</p>
+    <div class="f"><label for="cCats">Categorías</label><textarea id="cCats" rows="8"></textarea></div>
+    <div class="f"><label for="cProys">Proyectos / centros de costo</label><textarea id="cProys" rows="5"></textarea></div>
+    <div class="f"><label for="cMedios">Medios de pago</label><textarea id="cMedios" rows="5"></textarea></div>
+    <button class="btn primary sm" id="btnListasSave">Guardar listas</button>
+  </div>
+
+  <div class="card">
+    <p class="eyebrow">Reglas de seguridad</p>
+    <p class="sub">Péguelas en Firebase Console → Firestore → Reglas. Sin esto, cualquiera con la URL puede leer su clave.</p>
+    <pre id="reglas">rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    match /{doc=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}</pre>
+    <p class="hint">Además active <b>Authentication → Sign-in method → Anónimo</b>.</p>
+  </div>
+</section>
+
+</main>
+
+<nav>
+  <button class="on" data-v="cap"><span class="ico">📷</span>Capturar</button>
+  <button data-v="lst"><span class="ico">🧾</span>Gastos</button>
+  <button data-v="res"><span class="ico">📊</span>Resumen</button>
+  <button data-v="cfg"><span class="ico">⚙️</span>Ajustes</button>
+</nav>
+
+<div class="sheet" id="sheet"><div class="inner"><div class="grab"></div><div id="sheetBody"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, onSnapshot, query, orderBy }
+  from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+/* ---------------- valores por defecto ---------------- */
+const CATS_DEF = ["Alimentación / Colación","Estacionamiento","Combustible","Peajes / TAG",
+"Transporte (taxi, app, bus)","Alojamiento","Pasajes","Materiales y ferretería","Herramientas y EPP",
+"Fletes y despachos","Insumos de oficina","Telefonía e internet","Mantención de vehículo",
+"Trámites, notaría y CBR","Permisos y derechos municipales","Correo y encomiendas",
+"Representación / Clientes","Capacitación","Arriendo de equipos","Otros"];
+const PROYS_DEF = ["Administración / Oficina","Condominio Maitenes","Casa 146","Proyecto Gregorio de la Fuente"];
+const MEDIOS_DEF = ["Efectivo","Tarjeta débito personal","Tarjeta crédito personal","Tarjeta empresa",
+"Transferencia personal","Transferencia empresa","App de pago","Descuento por planilla"];
+const DOCS = ["Boleta","Factura","Voucher","Comprobante interno","Sin respaldo"];
+const ESTADOS = ["Pendiente","Presentado","Aprobado","Reembolsado"];
+const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+let cfg = { anthropicKey:"", modelo:"claude-sonnet-5", empresa:"Empresas FCM SpA", iva:19,
+            categorias:CATS_DEF, proyectos:PROYS_DEF, medios:MEDIOS_DEF };
+let gastos = [];
+let fotoGrande = null, fotoChica = null, editandoId = null;
+let db = null;
+
+const $ = s => document.querySelector(s);
+const money = n => "$" + (Math.round(n||0)).toLocaleString("es-CL");
+const hoy = () => new Date().toISOString().slice(0,10);
+
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on");
+  clearTimeout(t._x); t._x=setTimeout(()=>t.classList.remove("on"),2600); }
+
+function setupError(html){
+  document.body.innerHTML = '<div class="setup"><div class="card"><p class="eyebrow">Falta configurar</p>'+html+'</div></div>';
+}
+
+/* ---------------- arranque ---------------- */
+const fb = window.FCM_FIREBASE;
+if(!fb || String(fb.projectId).includes("PEGUE_AQUI")){
+  setupError('<h2>Pegue los datos de Firebase</h2><p class="sub">Abra este archivo con un editor de texto y reemplace el bloque <code>window.FCM_FIREBASE</code> del comienzo con la configuración web de su proyecto nuevo de Firebase. Después vuelva a subirlo a GitHub.</p>');
+} else {
+  try{
+    const app = initializeApp(fb);
+    db = getFirestore(app);
+    const auth = getAuth(app);
+    onAuthStateChanged(auth, u => { if(u) arrancar(); });
+    signInAnonymously(auth).catch(e=>{
+      setupError('<h2>No se pudo entrar</h2><p class="sub">Firebase respondió: <code>'+e.code+'</code>. Active <b>Authentication → Sign-in method → Anónimo</b> en la consola de Firebase y recargue.</p>');
+    });
+  }catch(e){
+    setupError('<h2>Configuración inválida</h2><p class="sub">'+e.message+'</p>');
+  }
+}
+
+async function arrancar(){
+  const snap = await getDoc(doc(db,"config","app"));
+  if(snap.exists()) cfg = Object.assign(cfg, snap.data());
+  pintarSelects(); pintarCfg();
+  $("#hdEmpresa").textContent = cfg.empresa || "FCM";
+  onSnapshot(query(collection(db,"gastos"), orderBy("fecha","desc")), s=>{
+    gastos = s.docs.map(d=>({id:d.id, ...d.data()}));
+    render();
+  });
+  const n = new Date();
+  $("#selMes").value = String(n.getMonth());
+  $("#selAnio").value = String(n.getFullYear());
+  $("#fFecha").value = hoy();
+  render();
+}
+
+/* ---------------- selects ---------------- */
+function opts(el, arr, keep){
+  const v = keep ? el.value : null;
+  el.innerHTML = arr.map(o=>`<option value="${o.replace(/"/g,'&quot;')}">${o}</option>`).join("");
+  if(v && arr.includes(v)) el.value = v;
+}
+function pintarSelects(){
+  opts($("#fCat"), cfg.categorias);
+  opts($("#fProy"), cfg.proyectos);
+  opts($("#fMedio"), cfg.medios);
+  opts($("#fDoc"), DOCS);
+  opts($("#fEstado"), ESTADOS);
+  opts($("#fltEstado"), ["Todos", ...ESTADOS]);
+  opts($("#fltProy"), ["Todos", ...cfg.proyectos]);
+  $("#selMes").innerHTML = MESES.map((m,i)=>`<option value="${i}">${m}</option>`).join("");
+  const y = new Date().getFullYear();
+  $("#selAnio").innerHTML = [y-1,y,y+1].map(a=>`<option value="${a}">${a}</option>`).join("");
+  $("#selAnio").value = String(y);
+}
+function pintarCfg(){
+  $("#cKey").value = cfg.anthropicKey||"";
+  $("#cModelo").value = cfg.modelo||"claude-sonnet-5";
+  $("#cEmpresa").value = cfg.empresa||"";
+  $("#cIva").value = cfg.iva ?? 19;
+  $("#cCats").value = (cfg.categorias||[]).join("\n");
+  $("#cProys").value = (cfg.proyectos||[]).join("\n");
+  $("#cMedios").value = (cfg.medios||[]).join("\n");
+}
+
+/* ---------------- pestañas ---------------- */
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("on"));
+  $("#v-"+b.dataset.v).classList.add("on");
+  window.scrollTo(0,0);
+});
+
+/* ---------------- foto ---------------- */
+$("#btnCam").onclick = ()=>$("#fileCam").click();
+$("#btnGal").onclick = ()=>$("#fileGal").click();
+$("#fileCam").onchange = e=>cargarFoto(e.target.files[0]);
+$("#fileGal").onchange = e=>cargarFoto(e.target.files[0]);
+
+function achicar(file, maxDim, calidad){
+  return new Promise((ok,fail)=>{
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = ()=>{
+      let {width:w, height:h} = img;
+      const f = Math.min(1, maxDim/Math.max(w,h));
+      w = Math.round(w*f); h = Math.round(h*f);
+      const c = document.createElement("canvas"); c.width=w; c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      ok(c.toDataURL("image/jpeg", calidad));
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); fail(new Error("No se pudo abrir la imagen")); };
+    img.src = url;
+  });
+}
+
+async function cargarFoto(file){
+  if(!file) return;
+  try{
+    fotoGrande = await achicar(file, 1560, .82);   // se envía a la API
+    fotoChica  = await achicar(file, 620, .55);    // se guarda como respaldo
+    $("#shotImg").src = fotoGrande; $("#shotImg").hidden = false;
+    $("#shotTxt").hidden = true; $("#shot").querySelector(".ico").hidden = true;
+    $("#btnLeer").disabled = false;
+  }catch(e){ toast("No se pudo leer la imagen"); }
+}
+
+/* ---------------- lectura del recibo ---------------- */
+$("#btnLeer").onclick = leerRecibo;
+
+const PROMPT = `Eres un asistente que digitaliza recibos chilenos (boletas, facturas, vouchers) para una rendición de gastos.
+Lee la imagen y devuelve EXCLUSIVAMENTE un objeto JSON, sin texto antes ni después, sin bloques de código y sin explicaciones.
+
+Campos:
+{
+ "fecha": "AAAA-MM-DD o null",
+ "comercio": "nombre del local o emisor, o null",
+ "rut_emisor": "RUT del emisor con guion, o null",
+ "tipo_documento": "Boleta | Factura | Voucher | Comprobante interno",
+ "numero_documento": "solo dígitos, o null",
+ "monto_total": entero en pesos chilenos sin puntos ni símbolos, o null,
+ "iva_desglosado": entero o null,
+ "categoria": "una de la LISTA_CATEGORIAS, la que mejor calce",
+ "medio_pago": "una de la LISTA_MEDIOS si el recibo lo indica, si no null",
+ "descripcion": "una línea breve de qué se compró o consumió",
+ "confianza": "alta | media | baja",
+ "notas": "una frase solo si algo quedó ilegible o dudoso, si no null"
+}
+
+Reglas:
+- El monto_total es lo efectivamente pagado, con IVA incluido. Si aparece "TOTAL" úselo, no el neto ni el subtotal.
+- Si el documento dice FACTURA usa "Factura"; si dice BOLETA usa "Boleta"; si es solo el comprobante de la tarjeta usa "Voucher".
+- Si un dato no se ve o no está, pon null. No inventes.`;
+
+async function leerRecibo(){
+  if(!cfg.anthropicKey){ toast("Falta la clave de la API en Ajustes"); return; }
+  if(!fotoGrande){ toast("Primero saque la foto"); return; }
+  const btn = $("#btnLeer");
+  btn.disabled = true; btn.textContent = "Leyendo…";
+  $("#shot").classList.add("scanning");
+  $("#flags").innerHTML = "";
+  try{
+    const b64 = fotoGrande.split(",")[1];
+    const txt = PROMPT
+      .replace("LISTA_CATEGORIAS", JSON.stringify(cfg.categorias))
+      .replace("LISTA_MEDIOS", JSON.stringify(cfg.medios));
+    const r = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{
+        "content-type":"application/json",
+        "x-api-key":cfg.anthropicKey,
+        "anthropic-version":"2023-06-01",
+        "anthropic-dangerous-direct-browser-access":"true"
+      },
+      body: JSON.stringify({
+        model: cfg.modelo || "claude-sonnet-5",
+        max_tokens: 900,
+        messages:[{ role:"user", content:[
+          { type:"image", source:{ type:"base64", media_type:"image/jpeg", data:b64 } },
+          { type:"text", text:txt }
+        ]}]
+      })
+    });
+    if(!r.ok){
+      const err = await r.text();
+      throw new Error(r.status + " · " + err.slice(0,180));
+    }
+    const data = await r.json();
+    const salida = (data.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("").trim();
+    const limpio = salida.replace(/^```(?:json)?/i,"").replace(/```$/,"").trim();
+    const g = JSON.parse(limpio);
+    volcar(g);
+  }catch(e){
+    $("#flags").innerHTML = `<div class="flag bad"><span>⚠</span><div><b>No se pudo leer el recibo</b>${e.message}. Revise la clave y el modelo en Ajustes, o complete los campos a mano.</div></div>`;
+  }finally{
+    btn.disabled = false; btn.textContent = "Leer recibo";
+    $("#shot").classList.remove("scanning");
+  }
+}
+
+function volcar(g){
+  if(g.fecha) $("#fFecha").value = g.fecha;
+  if(g.monto_total) $("#fMonto").value = g.monto_total;
+  if(g.comercio) $("#fProv").value = g.comercio;
+  if(g.descripcion) $("#fDesc").value = g.descripcion;
+  if(g.numero_documento) $("#fNro").value = String(g.numero_documento).replace(/\D/g,"");
+  if(g.tipo_documento && DOCS.includes(g.tipo_documento)) $("#fDoc").value = g.tipo_documento;
+  if(g.categoria && cfg.categorias.includes(g.categoria)) $("#fCat").value = g.categoria;
+  if(g.medio_pago && cfg.medios.includes(g.medio_pago)) $("#fMedio").value = g.medio_pago;
+
+  const avisos = [];
+  const dup = gastos.find(x => Number(x.monto)===Number(g.monto_total) && x.fecha===g.fecha);
+  if(dup) avisos.push(`<div class="flag warn"><span>⚠</span><div><b>Puede estar repetido</b>Ya hay un gasto de ${money(dup.monto)} con fecha ${dup.fecha} en ${dup.proveedor||"—"}.</div></div>`);
+  if(g.confianza==="baja") avisos.push(`<div class="flag warn"><span>👁</span><div><b>Lectura dudosa</b>La foto quedó poco legible. Revise monto y fecha antes de guardar.</div></div>`);
+  else if(!avisos.length) avisos.push(`<div class="flag ok"><span>✓</span><div><b>Recibo leído</b>Revise los datos y guarde.</div></div>`);
+  if(g.notas) avisos.push(`<div class="flag warn"><span>ℹ</span><div><b>Nota de la lectura</b>${g.notas}</div></div>`);
+  $("#flags").innerHTML = avisos.join("");
+  if(g.rut_emisor) $("#fObs").value = ($("#fObs").value ? $("#fObs").value+" · " : "") + "RUT " + g.rut_emisor;
+  $("#cardForm").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+/* ---------------- guardar ---------------- */
+$("#btnGuardar").onclick = async ()=>{
+  const monto = Number($("#fMonto").value);
+  if(!$("#fFecha").value){ toast("Falta la fecha"); return; }
+  if(!monto || monto<=0){ toast("Falta el monto"); return; }
+  const id = editandoId || (Date.now().toString(36) + Math.random().toString(36).slice(2,7));
+  const g = {
+    fecha:$("#fFecha").value, categoria:$("#fCat").value, proveedor:$("#fProv").value.trim(),
+    descripcion:$("#fDesc").value.trim(), proyecto:$("#fProy").value, tipoDoc:$("#fDoc").value,
+    nroDoc:$("#fNro").value.trim(), medioPago:$("#fMedio").value, monto,
+    estado:$("#fEstado").value, obs:$("#fObs").value.trim(),
+    foto: fotoChica || (editandoId ? (gastos.find(x=>x.id===editandoId)||{}).foto || null : null),
+    creado: editandoId ? (gastos.find(x=>x.id===editandoId)||{}).creado || Date.now() : Date.now()
+  };
+  try{
+    await setDoc(doc(db,"gastos",id), g);
+    toast(editandoId ? "Gasto actualizado" : "Gasto guardado");
+    limpiar();
+  }catch(e){ toast("No se pudo guardar: " + e.code); }
+};
+
+$("#btnLimpiar").onclick = limpiar;
+function limpiar(){
+  editandoId = null; fotoGrande = null; fotoChica = null;
+  $("#shotImg").hidden = true; $("#shotImg").src = "";
+  $("#shotTxt").hidden = false; $("#shot").querySelector(".ico").hidden = false;
+  $("#btnLeer").disabled = true;
+  $("#fFecha").value = hoy(); $("#fMonto").value = ""; $("#fProv").value = "";
+  $("#fDesc").value = ""; $("#fNro").value = ""; $("#fObs").value = "";
+  $("#fEstado").value = "Pendiente"; $("#flags").innerHTML = "";
+  $("#btnGuardar").textContent = "Guardar gasto";
+  $("#fileCam").value = ""; $("#fileGal").value = "";
+}
+
+/* ---------------- lista y resumen ---------------- */
+function delMes(){
+  const m = Number($("#selMes").value), a = Number($("#selAnio").value);
+  return gastos.filter(g=>{
+    const d = new Date(g.fecha + "T12:00:00");
+    return d.getMonth()===m && d.getFullYear()===a;
+  });
+}
+$("#selMes").onchange = render; $("#selAnio").onchange = render;
+$("#fltEstado").onchange = render; $("#fltProy").onchange = render;
+
+const claseEstado = e => ({Pendiente:"pen",Presentado:"pre",Aprobado:"apr",Reembolsado:"ree"}[e]||"pen");
+
+function render(){
+  const base = delMes();
+  const fe = $("#fltEstado").value, fp = $("#fltProy").value;
+  const l = base.filter(g => (fe==="Todos"||!fe||g.estado===fe) && (fp==="Todos"||!fp||g.proyecto===fp));
+
+  $("#lista").innerHTML = l.length ? l.map(g=>`
+    <div class="item" data-id="${g.id}">
+      ${g.foto ? `<img class="thumb" src="${g.foto}" alt="">` : `<div class="thumb" style="display:flex;align-items:center;justify-content:center;font-size:17px">🧾</div>`}
+      <div class="body">
+        <div class="t">${g.proveedor || g.categoria}</div>
+        <div class="m">${g.fecha.split("-").reverse().join("-")} · ${g.categoria}</div>
+        <div class="m">${g.proyecto || "—"}</div>
+        <span class="pill ${claseEstado(g.estado)}">${g.estado}</span>
+      </div>
+      <div class="amt"><div class="v">${money(g.monto)}</div>
+        <div class="m" style="font-size:11px">${g.tipoDoc||""}</div></div>
+    </div>`).join("")
+    : `<div class="empty"><div class="ico">🧾</div><p>Sin gastos en ${MESES[$("#selMes").value]}.</p><p style="font-size:13px">Vaya a Capturar y saque la foto del primer recibo.</p></div>`;
+
+  document.querySelectorAll(".item").forEach(el=>el.onclick=()=>abrirDetalle(el.dataset.id));
+
+  // KPIs
+  const tot = base.reduce((s,g)=>s+Number(g.monto||0),0);
+  const pen = base.filter(g=>g.estado==="Pendiente").reduce((s,g)=>s+Number(g.monto||0),0);
+  const ree = base.filter(g=>g.estado==="Reembolsado").reduce((s,g)=>s+Number(g.monto||0),0);
+  const iva = base.filter(g=>g.tipoDoc==="Factura")
+                  .reduce((s,g)=>s+Math.round(Number(g.monto||0)/(1+(cfg.iva||19)/100)*((cfg.iva||19)/100)),0);
+  $("#kpis").innerHTML = `
+    <div class="kpi hi"><div class="k">Total del mes</div><div class="v">${money(tot)}</div></div>
+    <div class="kpi"><div class="k">N° de gastos</div><div class="v">${base.length}</div></div>
+    <div class="kpi"><div class="k">Pendiente</div><div class="v" style="color:var(--signal)">${money(pen)}</div></div>
+    <div class="kpi"><div class="k">Reembolsado</div><div class="v" style="color:var(--accent)">${money(ree)}</div></div>
+    <div class="kpi"><div class="k">IVA recuperable</div><div class="v">${money(iva)}</div></div>
+    <div class="kpi"><div class="k">Neto</div><div class="v">${money(tot-iva)}</div></div>`;
+
+  barras("#porCat", base, "categoria", tot);
+  barras("#porProy", base, "proyecto", tot);
+}
+
+function barras(sel, arr, campo, tot){
+  const m = {};
+  arr.forEach(g=>{ const k = g[campo]||"—"; m[k] = (m[k]||0) + Number(g.monto||0); });
+  const e = Object.entries(m).sort((a,b)=>b[1]-a[1]);
+  $(sel).innerHTML = e.length ? e.map(([k,v])=>`
+    <div class="bar"><div class="lab"><span>${k}</span><span class="num">${money(v)}</span></div>
+    <div class="track"><div class="fill" style="width:${tot? (v/tot*100):0}%"></div></div></div>`).join("")
+    : `<p class="sub" style="margin:0">Sin datos este mes.</p>`;
+}
+
+/* ---------------- detalle ---------------- */
+function abrirDetalle(id){
+  const g = gastos.find(x=>x.id===id); if(!g) return;
+  $("#sheetBody").innerHTML = `
+    ${g.foto ? `<img src="${g.foto}" style="width:100%;border-radius:8px;margin-bottom:14px;border:1px solid var(--rule)">` : ""}
+    <h2>${g.proveedor||g.categoria}</h2>
+    <p class="sub">${g.fecha.split("-").reverse().join("-")} · ${g.categoria} · ${g.proyecto||"—"}</p>
+    <div class="kpis">
+      <div class="kpi hi"><div class="k">Monto</div><div class="v">${money(g.monto)}</div></div>
+      <div class="kpi"><div class="k">Documento</div><div class="v" style="font-size:14px">${g.tipoDoc||"—"}<br>${g.nroDoc||""}</div></div>
+    </div>
+    ${g.descripcion?`<p style="margin:0 0 6px"><b>Detalle.</b> ${g.descripcion}</p>`:""}
+    ${g.obs?`<p class="sub">${g.obs}</p>`:""}
+    <div class="f"><label>Estado</label><select id="dEstado">${ESTADOS.map(e=>`<option ${e===g.estado?"selected":""}>${e}</option>`).join("")}</select></div>
+    <div class="row" style="margin-top:6px">
+      <button class="btn ghost sm" id="dEditar">Editar</button>
+      <button class="btn primary sm" id="dGuardar">Guardar estado</button>
+    </div>
+    <button class="btn ghost sm" id="dBorrar" style="margin-top:8px;color:var(--danger);border-color:#E9C6C2">Eliminar gasto</button>`;
+  $("#sheet").classList.add("on");
+  $("#dGuardar").onclick = async ()=>{
+    await setDoc(doc(db,"gastos",id), {...g, estado:$("#dEstado").value});
+    cerrar(); toast("Estado actualizado");
+  };
+  $("#dEditar").onclick = ()=>{
+    editandoId = id; fotoChica = g.foto || null;
+    $("#fFecha").value=g.fecha; $("#fMonto").value=g.monto; $("#fProv").value=g.proveedor||"";
+    $("#fDesc").value=g.descripcion||""; $("#fNro").value=g.nroDoc||""; $("#fObs").value=g.obs||"";
+    if(cfg.categorias.includes(g.categoria)) $("#fCat").value=g.categoria;
+    if(cfg.proyectos.includes(g.proyecto)) $("#fProy").value=g.proyecto;
+    if(cfg.medios.includes(g.medioPago)) $("#fMedio").value=g.medioPago;
+    $("#fDoc").value=g.tipoDoc||"Boleta"; $("#fEstado").value=g.estado;
+    $("#btnGuardar").textContent="Guardar cambios";
+    if(g.foto){ $("#shotImg").src=g.foto; $("#shotImg").hidden=false; $("#shotTxt").hidden=true;
+                $("#shot").querySelector(".ico").hidden=true; }
+    cerrar(); document.querySelector('nav button[data-v="cap"]').click();
+  };
+  $("#dBorrar").onclick = async ()=>{
+    if(!confirm("¿Eliminar este gasto? No se puede deshacer.")) return;
+    await deleteDoc(doc(db,"gastos",id)); cerrar(); toast("Gasto eliminado");
+  };
+}
+function cerrar(){ $("#sheet").classList.remove("on"); }
+$("#sheet").onclick = e=>{ if(e.target.id==="sheet") cerrar(); };
+
+/* ---------------- exportar ---------------- */
+const fechaCL = f => f.split("-").reverse().join("-");
+function filasMes(){
+  return delMes().slice().sort((a,b)=>a.fecha.localeCompare(b.fecha));
+}
+async function copiar(txt, msg){
+  try{ await navigator.clipboard.writeText(txt); toast(msg); }
+  catch(e){
+    const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy"); ta.remove(); toast(msg);
+  }
+}
+$("#btnCopiaB").onclick = ()=>{
+  const f = filasMes();
+  if(!f.length){ toast("No hay gastos este mes"); return; }
+  const t = f.map(g=>[fechaCL(g.fecha), g.categoria, g.proveedor, g.descripcion, g.proyecto,
+    g.tipoDoc, g.nroDoc, g.medioPago, g.monto].map(x=>String(x??"").replace(/\t|\n/g," ")).join("\t")).join("\n");
+  copiar(t, f.length + " filas copiadas · pegue en B8 de " + MESES[$("#selMes").value]);
+};
+$("#btnCopiaM").onclick = ()=>{
+  const f = filasMes();
+  if(!f.length){ toast("No hay gastos este mes"); return; }
+  copiar(f.map(g=>g.estado).join("\n"), "Estados copiados · pegue en M8");
+};
+$("#btnCsv").onclick = ()=>{
+  const f = filasMes();
+  if(!f.length){ toast("No hay gastos este mes"); return; }
+  const head = ["Fecha","Categoria","Proveedor","Descripcion","Proyecto","TipoDoc","NroDoc","MedioPago","Monto","Estado","Observaciones"];
+  const esc = x => '"' + String(x??"").replace(/"/g,'""') + '"';
+  const csv = "\uFEFF" + [head.join(";")].concat(f.map(g=>[fechaCL(g.fecha),g.categoria,g.proveedor,
+    g.descripcion,g.proyecto,g.tipoDoc,g.nroDoc,g.medioPago,g.monto,g.estado,g.obs].map(esc).join(";"))).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  a.download = `Gastos_${MESES[$("#selMes").value]}_${$("#selAnio").value}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+};
+
+/* ---------------- ajustes ---------------- */
+async function guardarCfg(){
+  await setDoc(doc(db,"config","app"), cfg);
+}
+$("#btnCfgSave").onclick = async ()=>{
+  cfg.anthropicKey = $("#cKey").value.trim();
+  cfg.modelo = $("#cModelo").value.trim() || "claude-sonnet-5";
+  cfg.empresa = $("#cEmpresa").value.trim();
+  cfg.iva = Number($("#cIva").value) || 19;
+  try{ await guardarCfg(); $("#hdEmpresa").textContent = cfg.empresa || "FCM"; toast("Ajustes guardados"); }
+  catch(e){ toast("No se pudo guardar: " + e.code); }
+};
+$("#btnListasSave").onclick = async ()=>{
+  const lim = s => s.split("\n").map(x=>x.trim()).filter(Boolean);
+  cfg.categorias = lim($("#cCats").value); cfg.proyectos = lim($("#cProys").value);
+  cfg.medios = lim($("#cMedios").value);
+  try{ await guardarCfg(); pintarSelects(); render(); toast("Listas guardadas"); }
+  catch(e){ toast("No se pudo guardar: " + e.code); }
+};
+</script>
+</body>
+</html>
